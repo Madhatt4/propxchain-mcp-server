@@ -1,0 +1,14 @@
+PropXchain MCP Server.
+
+Copyright (c) 2026 PropXchain.
+
+This source is published for transparency, security review, and to enable
+npm provenance attestation. The package is freely installable from the npm
+registry under @propxchain/mcp-server for use against PropXchain canisters
+on the Internet Computer.
+
+All other rights reserved. Redistribution, modification, or commercial
+forking of this code is not permitted without written permission from
+PropXchain.
+
+Contact: https://propxchain.com

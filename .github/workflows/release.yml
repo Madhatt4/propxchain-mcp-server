@@ -1,0 +1,109 @@
+name: release (stable)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Skip actual publish (runs npm publish --dry-run instead)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test (init + tools/list)
+        env:
+          BOT_PRIVATE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          IC_NETWORK: ic
+        run: |
+          (printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci-smoke","version":"1.0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; \
+           sleep 2) | timeout 8 node dist/index.js > /tmp/mcp.out 2>/tmp/mcp.err || true
+          if grep -q '"name":"propxchain-mcp-server"' /tmp/mcp.out && grep -q '"tools":\[' /tmp/mcp.out; then
+            echo "Smoke test passed."
+          else
+            echo "::error::Smoke test failed."
+            echo "--- stdout ---"; cat /tmp/mcp.out
+            echo "--- stderr ---"; cat /tmp/mcp.err
+            exit 1
+          fi
+
+      - name: Read + validate version
+        id: ver
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $V"
+          if [[ "$V" == *-* ]]; then
+            echo "::error::Version $V has a pre-release suffix. Bump package.json to a clean SemVer."
+            exit 1
+          fi
+
+      - name: Guard against re-publishing an existing version
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          if npm view "@propxchain/mcp-server@$V" version >/dev/null 2>&1; then
+            echo "::error::@propxchain/mcp-server@$V is already on npm. Bump package.json version first."
+            exit 1
+          fi
+          echo "Version $V not yet on npm. OK to publish."
+
+      - name: Publish to npm with provenance attestation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "DRY RUN. Would publish:"
+            npm publish --tag latest --access public --provenance --dry-run
+          else
+            npm publish --tag latest --access public --provenance
+          fi
+
+      - name: Create + push git tag
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          TAG="v$V"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release @propxchain/mcp-server@$V"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "### DRY RUN: @propxchain/mcp-server@$V (nothing published)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Published @propxchain/mcp-server@$V to npm \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Provenance attestation: enabled (verify with \`npm view @propxchain/mcp-server\`)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Git tag: \`v$V\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Install: \`npm install -g @propxchain/mcp-server\`" >> "$GITHUB_STEP_SUMMARY"
+          fi

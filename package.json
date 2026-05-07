@@ -1,0 +1,55 @@
+{
+  "name": "@propxchain/mcp-server",
+  "version": "2.2.0",
+  "description": "Model Context Protocol server for PropXchain — gives LLM agents (Claude, ChatGPT, etc.) access to property conveyancing transactions on the Internet Computer.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "propxchain-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/add-shebang.mjs",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@icp-sdk/core": "^5.4.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Madhatt4/propxchain-mcp-server.git"
+  },
+  "homepage": "https://propxchain.com/agent",
+  "bugs": {
+    "url": "https://github.com/Madhatt4/propxchain-mcp-server/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "internet-computer",
+    "icp",
+    "propxchain",
+    "conveyancing",
+    "claude",
+    "ai-agent"
+  ]
+}
