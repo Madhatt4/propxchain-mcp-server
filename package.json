@@ -1,6 +1,6 @@
 {
   "name": "@propxchain/mcp-server",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Model Context Protocol server for PropXchain — gives LLM agents (Claude, ChatGPT, etc.) access to property conveyancing transactions on the Internet Computer.",
   "license": "UNLICENSED",
   "type": "module",

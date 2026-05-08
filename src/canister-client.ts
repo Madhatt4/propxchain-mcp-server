@@ -596,16 +596,35 @@ function toNumber(val: unknown): number {
   return Number(val);
 }
 
+/**
+ * Convert a Candid optional bigint-like value (`?Nat64` etc, encoded by
+ * @icp-sdk as `[]` for None or `[value]` for Some) to bigint or undefined.
+ *
+ * Why this helper exists: the previous convention `raw.field ? toBigInt(...) : undefined`
+ * silently fails because `[]` is truthy in JS. The truthy branch then calls
+ * `optToUndefined([])` -> `undefined`, then `toBigInt(undefined)` throws
+ * "Cannot convert undefined to a BigInt". Symptom: fresh transactions with
+ * None-valued timestamps crash on join. Always go through optBigInt instead.
+ */
+function optBigInt(raw: unknown): bigint | undefined {
+  const v = optToUndefined(raw as [unknown] | []);
+  return v !== undefined ? toBigInt(v) : undefined;
+}
+
+/** Same shape as optBigInt, for `?Nat`/`?Int` fields converted to JS number. */
+function optNumber(raw: unknown): number | undefined {
+  const v = optToUndefined(raw as [unknown] | []);
+  return v !== undefined ? toNumber(v) : undefined;
+}
+
 /** Convert raw ICP LandRegistryIntegration to typed version */
 function convertLandRegistryIntegration(raw: Record<string, unknown>): LandRegistryIntegration {
   return {
     status: extractVariant(raw.status as Record<string, unknown>) as LandRegistryStatus,
-    submittedToLRAt: raw.submittedToLRAt ? toBigInt(optToUndefined(raw.submittedToLRAt as [unknown] | [])) : undefined,
+    submittedToLRAt: optBigInt(raw.submittedToLRAt),
     lrPayloadID: optToUndefined(raw.lrPayloadID as [string] | []) ?? undefined,
     landRegistryConfirmationNumber: optToUndefined(raw.landRegistryConfirmationNumber as [string] | []) ?? undefined,
-    estimatedLRCompletionTime: raw.estimatedLRCompletionTime
-      ? toBigInt(optToUndefined(raw.estimatedLRCompletionTime as [unknown] | []))
-      : undefined,
+    estimatedLRCompletionTime: optBigInt(raw.estimatedLRCompletionTime),
   };
 }
 
@@ -636,33 +655,19 @@ export function convertTransaction(raw: Record<string, unknown>): Transaction {
     previousOwner: raw.previousOwner as string,
     accessList: (raw.accessList as unknown[]).map(principalToString),
     chainedTransactions: raw.chainedTransactions as string[],
-    chainPosition: raw.chainPosition
-      ? toNumber(optToUndefined(raw.chainPosition as [unknown] | []))
-      : undefined,
+    chainPosition: optNumber(raw.chainPosition),
     linkToTransaction: optToUndefined(raw.linkToTransaction as [string] | []) ?? undefined,
-    exchangedAt: raw.exchangedAt
-      ? toBigInt(optToUndefined(raw.exchangedAt as [unknown] | []))
-      : undefined,
+    exchangedAt: optBigInt(raw.exchangedAt),
     buyerSolicitorSignature: optToUndefined(raw.buyerSolicitorSignature as [string] | []) ?? undefined,
     sellerSolicitorSignature: optToUndefined(raw.sellerSolicitorSignature as [string] | []) ?? undefined,
-    contractExchangeTimestamp: raw.contractExchangeTimestamp
-      ? toBigInt(optToUndefined(raw.contractExchangeTimestamp as [unknown] | []))
-      : undefined,
-    completionInitiatedAt: raw.completionInitiatedAt
-      ? toBigInt(optToUndefined(raw.completionInitiatedAt as [unknown] | []))
-      : undefined,
-    blockchainCompletedAt: raw.blockchainCompletedAt
-      ? toBigInt(optToUndefined(raw.blockchainCompletedAt as [unknown] | []))
-      : undefined,
+    contractExchangeTimestamp: optBigInt(raw.contractExchangeTimestamp),
+    completionInitiatedAt: optBigInt(raw.completionInitiatedAt),
+    blockchainCompletedAt: optBigInt(raw.blockchainCompletedAt),
     blockchainCompletionProof: optToUndefined(raw.blockchainCompletionProof as [string] | []) ?? undefined,
-    blockchainCompletionTimestamp: raw.blockchainCompletionTimestamp
-      ? toBigInt(optToUndefined(raw.blockchainCompletionTimestamp as [unknown] | []))
-      : undefined,
+    blockchainCompletionTimestamp: optBigInt(raw.blockchainCompletionTimestamp),
     buyerFundsHash: optToUndefined(raw.buyerFundsHash as [string] | []) ?? undefined,
     completionStatementHash: optToUndefined(raw.completionStatementHash as [string] | []) ?? undefined,
-    landRegistryRegisteredAt: raw.landRegistryRegisteredAt
-      ? toBigInt(optToUndefined(raw.landRegistryRegisteredAt as [unknown] | []))
-      : undefined,
+    landRegistryRegisteredAt: optBigInt(raw.landRegistryRegisteredAt),
     landRegistryIntegration: convertLandRegistryIntegration(
       raw.landRegistryIntegration as Record<string, unknown>,
     ),
