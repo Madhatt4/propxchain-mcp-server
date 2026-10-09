@@ -3,14 +3,31 @@
 [![npm](https://img.shields.io/npm/v/@propxchain/mcp-server.svg)](https://www.npmjs.com/package/@propxchain/mcp-server)
 [![MCP](https://img.shields.io/badge/MCP-compatible-blue)](https://modelcontextprotocol.io)
 
-Model Context Protocol server that lets AI agents (Claude Desktop, Claude Code, Codex CLI, Cursor, ChatGPT plugins) read and act on PropXchain property conveyancing transactions on the Internet Computer.
+MCP server for [PropXchain](https://propxchain.com), the UK platform for selling or buying a home: one shared, live record of the transaction for seller, buyer, conveyancer and estate agent. (Not Propchain/PROPC, the unrelated crypto token.)
 
-The server runs locally as a stdio MCP process. It generates its own Ed25519 keypair on first launch (stored on disk, never copied across boundaries). Authorisation is per-transaction: the user shares a `TX-XXXX-XXXX` invite code with the agent, the agent calls `propxchain_join_transaction_as_bot`, the canister adds the bot to that transaction's access list. Revoke at any time from the propxchain.com bot panel.
+Your AI assistant can join your transaction with its invite code, read status, checklists, documents and the audit trail, pull HM Land Registry and property data, explain each step, and draft messages to the other parties. Money and legal steps still wait for you.
+
+## Connect (hosted, no install)
+
+PropXchain runs this server for you at:
+
+```
+https://mcp.propxchain.com/mcp
+```
+
+- **claude.ai / Claude Desktop:** Settings, Connectors, Add custom connector, paste the URL, leave client ID and secret blank.
+- **Claude Code:** `claude mcp add --transport http propxchain https://mcp.propxchain.com/mcp`
+- **ChatGPT, Cursor and other MCP clients:** add a remote (Streamable HTTP) server with the URL above. Sign-in is OAuth 2.1, discovered automatically.
+
+You approve the connection with your PropXchain email and a 6-digit code, then give your assistant a `TX-XXXX-XXXX` invite code. Remove it at any time from the transaction's bot panel.
 
 Full setup walkthrough: [propxchain.com/agent](https://propxchain.com/agent).
 Machine-readable manifest: [propxchain.com/.well-known/mcp.json](https://propxchain.com/.well-known/mcp.json).
+Registry listing: [`server.json`](server.json) (`io.github.Madhatt4/propxchain`).
 
-## Install
+## Run it locally instead (stdio)
+
+For hosts without remote MCP support. The local server generates its own Ed25519 keypair on first launch (stored on disk, never copied across boundaries); access is still per transaction via invite code.
 
 ```bash
 npm install -g @propxchain/mcp-server
